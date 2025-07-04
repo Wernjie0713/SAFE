@@ -31,6 +31,7 @@ ChartJS.register(
 
 export default function Dashboard({ auth, quickStats, sensorDistribution, incidentTrends }) {
     const [alerts, setAlerts] = useState([]);
+    const [lockedAlerts, setLockedAlerts] = useState(new Set());
     const [alertStats, setAlertStats] = useState({
         total_new: 0,
         by_severity: {
@@ -48,12 +49,33 @@ export default function Dashboard({ auth, quickStats, sensorDistribution, incide
                 axios.get('/api/alerts/stats')
             ]);
             
-            setAlerts(alertsResponse.data);
+            const newAlerts = alertsResponse.data;
+            
+            // Check for new critical alerts and lock them
+            newAlerts.forEach(alert => {
+                if (alert.severity === 'critical' && !lockedAlerts.has(alert.id)) {
+                    setLockedAlerts(prev => {
+                        const updated = new Set(prev);
+                        updated.add(alert.id);
+                        // Set a timeout to unlock after 10 seconds
+                        setTimeout(() => {
+                            setLockedAlerts(current => {
+                                const next = new Set(current);
+                                next.delete(alert.id);
+                                return next;
+                            });
+                        }, 10000);
+                        return updated;
+                    });
+                }
+            });
+            
+            setAlerts(newAlerts);
             setAlertStats(statsResponse.data);
         } catch (error) {
             console.error('Error fetching alerts:', error);
         }
-    }, []);
+    }, [lockedAlerts]);
 
     // Set up polling interval
     useEffect(() => {
@@ -63,6 +85,11 @@ export default function Dashboard({ auth, quickStats, sensorDistribution, incide
     }, [fetchAlerts]);
 
     const handleAlertAction = async (alertId, action) => {
+        // Don't allow actions on locked alerts
+        if (lockedAlerts.has(alertId)) {
+            return;
+        }
+
         try {
             await axios.patch(`/api/alerts/${alertId}`, {
                 status: action
@@ -212,7 +239,9 @@ export default function Dashboard({ auth, quickStats, sensorDistribution, incide
                                     alerts.map((alert) => (
                                         <div
                                             key={alert.id}
-                                            className="border rounded-lg p-4 hover:bg-gray-50 transition-colors duration-150"
+                                            className={`border rounded-lg p-4 hover:bg-gray-50 transition-colors duration-150 ${
+                                                lockedAlerts.has(alert.id) ? 'border-red-500' : ''
+                                            }`}
                                         >
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center space-x-3">
@@ -222,6 +251,11 @@ export default function Dashboard({ auth, quickStats, sensorDistribution, incide
                                                     <span className="text-sm font-medium text-gray-900">
                                                         {alert.sensor.name} ({alert.sensor.type})
                                                     </span>
+                                                    {lockedAlerts.has(alert.id) && (
+                                                        <span className="text-xs text-red-600 font-medium">
+                                                            Locked for review
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <div className="text-sm text-gray-500">
                                                     {alert.created_at}
@@ -231,13 +265,19 @@ export default function Dashboard({ auth, quickStats, sensorDistribution, incide
                                             <div className="mt-3 flex items-center space-x-3">
                                                 <button
                                                     onClick={() => handleAlertAction(alert.id, 'acknowledged')}
-                                                    className="text-sm text-blue-600 hover:text-blue-800"
+                                                    disabled={lockedAlerts.has(alert.id)}
+                                                    className={`text-sm text-blue-600 hover:text-blue-800 ${
+                                                        lockedAlerts.has(alert.id) ? 'opacity-50 cursor-not-allowed' : ''
+                                                    }`}
                                                 >
                                                     Acknowledge
                                                 </button>
                                                 <button
                                                     onClick={() => handleAlertAction(alert.id, 'resolved')}
-                                                    className="text-sm text-green-600 hover:text-green-800"
+                                                    disabled={lockedAlerts.has(alert.id)}
+                                                    className={`text-sm text-green-600 hover:text-green-800 ${
+                                                        lockedAlerts.has(alert.id) ? 'opacity-50 cursor-not-allowed' : ''
+                                                    }`}
                                                 >
                                                     Mark as Resolved
                                                 </button>
