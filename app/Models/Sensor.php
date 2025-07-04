@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Sensor extends Model
 {
@@ -30,6 +31,26 @@ class Sensor extends Model
     protected $casts = [
         'battery_level' => 'integer',
     ];
+
+    /**
+     * Get all alerts for this sensor.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function alerts(): HasMany
+    {
+        return $this->hasMany(Alert::class);
+    }
+
+    /**
+     * Get all readings for this sensor.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function readings(): HasMany
+    {
+        return $this->hasMany(SensorReading::class);
+    }
 
     /**
      * Get the battery level status.

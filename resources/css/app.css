@@ -1,3 +1,35 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer utilities {
+    @keyframes drift-1 {
+        0% { transform: translate(0, 0) rotate(0deg); }
+        50% { transform: translate(100px, 100px) rotate(180deg); }
+        100% { transform: translate(0, 0) rotate(360deg); }
+    }
+
+    @keyframes drift-2 {
+        0% { transform: translate(0, 0) rotate(0deg); }
+        50% { transform: translate(-100px, 50px) rotate(-180deg); }
+        100% { transform: translate(0, 0) rotate(-360deg); }
+    }
+
+    @keyframes drift-3 {
+        0% { transform: translate(0, 0) rotate(0deg); }
+        50% { transform: translate(50px, -100px) rotate(90deg); }
+        100% { transform: translate(0, 0) rotate(360deg); }
+    }
+
+    .animate-drift-1 {
+        animation: drift-1 20s infinite linear;
+    }
+
+    .animate-drift-2 {
+        animation: drift-2 25s infinite linear;
+    }
+
+    .animate-drift-3 {
+        animation: drift-3 30s infinite linear;
+    }
+}

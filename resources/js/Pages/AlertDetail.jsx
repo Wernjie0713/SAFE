@@ -4,11 +4,29 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import Toast from '@/Components/Toast';
+import AiSummarySection from '@/Components/AiSummarySection';
+import axios from 'axios';
+
+// Create an axios instance with the CSRF token
+const api = axios.create({
+    headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+    withCredentials: true // This is important for sending cookies
+});
 
 export default function AlertDetail({ auth, alert }) {
     const [isUpdating, setIsUpdating] = useState(false);
     const [showToast, setShowToast] = useState(false);
     const { flash } = usePage().props;
+    const [aiData, setAiData] = useState({
+        summary: alert.ai_summary,
+        suggestion: alert.ai_suggestion,
+        loading: false,
+        error: null
+    });
 
     useEffect(() => {
         if (flash?.success) {
@@ -17,6 +35,53 @@ export default function AlertDetail({ auth, alert }) {
             return () => clearTimeout(timer);
         }
     }, [flash?.success]);
+
+    useEffect(() => {
+        const generateAiSummary = async () => {
+            // Only generate if we don't have a summary yet
+            if (!alert.ai_summary) {
+                setAiData(prev => ({ ...prev, loading: true, error: null }));
+                try {
+                    const response = await api.post(`/api/alerts/${alert.id}/generate-summary`);
+                    setAiData({
+                        summary: response.data.ai_summary,
+                        suggestion: response.data.ai_suggestion,
+                        loading: false,
+                        error: null
+                    });
+                } catch (error) {
+                    console.error('Failed to generate AI summary:', error);
+                    let errorMessage = 'Failed to generate AI summary. Please try again later.';
+                    
+                    // Add more specific error messages based on the error type
+                    if (error.response) {
+                        switch (error.response.status) {
+                            case 401:
+                                errorMessage = 'Authentication required. Please refresh the page and try again.';
+                                break;
+                            case 403:
+                                errorMessage = 'You do not have permission to perform this action.';
+                                break;
+                            case 429:
+                                errorMessage = 'Too many requests. Please wait a moment and try again.';
+                                break;
+                            case 500:
+                                errorMessage = 'Server error occurred while generating summary.';
+                                break;
+                        }
+                    }
+                    
+                    setAiData(prev => ({
+                        ...prev,
+                        loading: false,
+                        error: errorMessage
+                    }));
+                }
+            }
+        };
+
+        generateAiSummary();
+    }, [alert.id, alert.ai_summary]);
 
     const handleAlertAction = (action) => {
         setIsUpdating(true);
@@ -167,6 +232,17 @@ export default function AlertDetail({ auth, alert }) {
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+
+                            {/* AI Summary & Suggestions */}
+                            <div className="mb-8">
+                                <h3 className="text-lg font-medium text-gray-900 mb-4">AI Summary & Suggestions</h3>
+                                <AiSummarySection
+                                    summary={aiData.summary}
+                                    suggestions={aiData.suggestion}
+                                    isLoading={aiData.loading}
+                                    error={aiData.error}
+                                />
                             </div>
 
                             {/* Action Buttons */}

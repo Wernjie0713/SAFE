@@ -243,7 +243,7 @@ export default function ReportHistory({ auth, alerts, filters, filterOptions, su
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             Location
                                         </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
                                             Description
                                         </th>
                                     </tr>
@@ -256,7 +256,16 @@ export default function ReportHistory({ auth, alerts, filters, filterOptions, su
                                             onClick={() => router.visit(route('alerts.show', alert.id))}
                                         >
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                <div>{alert.created_at}</div>
+                                                <div>
+                                                    {new Date(alert.created_at).toLocaleString('en-MY', {
+                                                        day: '2-digit',
+                                                        month: '2-digit',
+                                                        year: 'numeric',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit',
+                                                        hour12: true
+                                                    })}
+                                                </div>
                                                 <div className="text-xs text-gray-500">{alert.created_at_diff}</div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -278,7 +287,7 @@ export default function ReportHistory({ auth, alerts, filters, filterOptions, su
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                 {alert.sensor.location}
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-gray-900">
+                                            <td className="px-6 py-4 text-sm text-gray-900 max-w-md break-words">
                                                 {alert.description}
                                             </td>
                                         </tr>
