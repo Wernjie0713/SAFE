@@ -35,4 +35,20 @@ return [
         ],
     ],
 
+    'vertex_ai' => [
+        'endpoint' => env('VERTEX_AI_ENDPOINT'),
+        'api_key' => env('VERTEX_AI_API_KEY'),
+        'project_id' => env('VERTEX_AI_PROJECT_ID'),
+        'model_id' => env('VERTEX_AI_MODEL_ID'),
+        'location' => env('VERTEX_AI_LOCATION', 'us-central1'),
+        'history_window' => env('VERTEX_AI_HISTORY_WINDOW', 10), // Number of historical readings to consider
+    ],
+
+    'openai' => [
+        'api_key' => env('OPENAI_API_KEY'),
+        'model' => env('OPENAI_MODEL', 'gpt-4o-mini'), // Default to GPT-4 if not specified
+        'temperature' => env('OPENAI_TEMPERATURE', 0.7),
+        'max_tokens' => env('OPENAI_MAX_TOKENS', 500),
+    ],
+
 ];
