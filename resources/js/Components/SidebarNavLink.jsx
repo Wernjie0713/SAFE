@@ -11,12 +11,26 @@ export default function SidebarNavLink({
 }) {
     const { url } = usePage();
     
-    // Simplified active state detection
-    const isActive = active || url === href;
+    // Enhanced active state detection
+    const isActive = active || (() => {
+        // Remove trailing slashes for comparison
+        const currentPath = url.endsWith('/') ? url.slice(0, -1) : url;
+        const linkPath = typeof href === 'string' && href.startsWith('/') 
+            ? (href.endsWith('/') ? href.slice(0, -1) : href)
+            : href;
+        
+        // For direct paths, compare the actual URL paths
+        if (typeof href === 'string' && href.startsWith('/')) {
+            return currentPath === linkPath;
+        }
+        
+        // For route names, use route().current()
+        return route().current(href);
+    })();
 
     return (
         <Link
-            href={href}
+            href={typeof href === 'string' && href.startsWith('/') ? href : route(href)}
             {...props}
             className={
                 'group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ' +

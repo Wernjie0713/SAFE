@@ -6,7 +6,6 @@ use App\Http\Controllers\Api\DataIngestionController;
 use App\Http\Controllers\Api\RobotInspectionController;
 use App\Http\Controllers\Api\AiAssistantController;
 use App\Http\Controllers\Api\AlertController;
-use App\Http\Controllers\Api\DemoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -58,5 +57,4 @@ Route::middleware(['auth:sanctum', 'web'])->group(function () {
 // Data Ingestion Routes (separate middleware for M2M communication)
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/ingest/sensor-data', [DataIngestionController::class, 'store']);
-    Route::post('/demo/trigger-scenario', [DemoController::class, 'triggerScenario']);
 }); 

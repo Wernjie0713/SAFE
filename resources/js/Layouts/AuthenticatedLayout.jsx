@@ -94,15 +94,6 @@ export default function AuthenticatedLayout({ header, children }) {
                 </svg>
             )
         },
-        {
-            name: 'Demo Controls',
-            href: 'demo.controls',
-            icon: (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                </svg>
-            )
-        },
         // {
         //     name: 'Settings',
         //     href: '/settings',
@@ -163,9 +154,8 @@ export default function AuthenticatedLayout({ header, children }) {
                                 {navigationItems.map((item) => (
                                     <SidebarNavLink
                                         key={item.name}
-                                        href={route(item.href)}
+                                        href={item.href}
                                         icon={item.icon}
-                                        active={route().current(item.href)}
                                     >
                                         {item.name}
                                     </SidebarNavLink>
@@ -210,35 +200,34 @@ export default function AuthenticatedLayout({ header, children }) {
                         </div>
                     </div>
 
-                    {/* Desktop Navigation */}
-                    <div className="mt-5 flex flex-1 flex-col">
-                        <nav className="flex-1 space-y-1 px-2">
+                    {/* Navigation */}
+                    <div className="flex flex-1 flex-col overflow-y-auto">
+                        <nav className="flex-1 space-y-1 px-2 py-4">
                             {navigationItems.map((item) => (
                                 <SidebarNavLink
                                     key={item.name}
-                                    href={route(item.href)}
+                                    href={item.href}
                                     icon={item.icon}
-                                    active={route().current(item.href)}
                                 >
                                     {item.name}
                                 </SidebarNavLink>
                             ))}
                         </nav>
-                    </div>
 
-                    {/* Logout Button */}
-                    <div className="px-2 pb-4">
-                        <Link
-                            href={route('logout')}
-                            method="post"
-                            as="button"
-                            className="group flex w-full items-center px-4 py-3 text-sm font-medium text-gray-300 hover:bg-gray-700/50 hover:text-white rounded-lg transition-all duration-200"
-                        >
-                            <svg className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                            </svg>
-                            Logout
-                        </Link>
+                        {/* Logout Button */}
+                        <div className="px-2 pb-4">
+                            <Link
+                                href={route('logout')}
+                                method="post"
+                                as="button"
+                                className="group flex w-full items-center px-4 py-3 text-sm font-medium text-gray-300 hover:bg-gray-700/50 hover:text-white rounded-lg transition-all duration-200"
+                            >
+                                <svg className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                </svg>
+                                Logout
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </div>

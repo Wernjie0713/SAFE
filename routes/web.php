@@ -68,10 +68,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/ai-assistant', function () {
         return Inertia::render('ChatbotAI');
     })->name('ai-assistant');
-
-    Route::get('/demo-controls', function () {
-        return Inertia::render('DemoControlPanel');
-    })->name('demo.controls');
 });
 
 require __DIR__.'/auth.php';
