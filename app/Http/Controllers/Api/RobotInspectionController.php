@@ -8,9 +8,51 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
 
 class RobotInspectionController extends Controller
 {
+    // Only for backup usage, when Vertex AI is clash or not setup properly in comp
+    private $possibleAlerts = [
+        [
+            'type' => 'Corrosion Alert',
+            'description' => 'Severe rust detected on pipe joints, potential structural weakness.',
+            'severity' => 'critical'
+        ],
+        [
+            'type' => 'Material Degradation',
+            'description' => 'Surface rust spreading along pipe exterior, early intervention recommended.',
+            'severity' => 'medium'
+        ],
+        [
+            'type' => 'Pipe Integrity Warning',
+            'description' => 'Deep rust penetration observed, possible leak risk.',
+            'severity' => 'high'
+        ],
+        [
+            'type' => 'Maintenance Alert',
+            'description' => 'Initial rust formation detected on pipe surface, preventive maintenance needed.',
+            'severity' => 'low'
+        ],
+        [
+            'type' => 'Structural Warning',
+            'description' => 'Advanced corrosion at pipe support points, stability concerns.',
+            'severity' => 'high'
+        ],
+        [
+            'type' => 'Safety Hazard',
+            'description' => 'Rust-induced pipe thinning detected, pressure containment risk.',
+            'severity' => 'critical'
+        ]
+    ];
+
+    private function getRandomAlerts($count = 2)
+    {
+        $alerts = $this->possibleAlerts;
+        shuffle($alerts);
+        return array_slice($alerts, 0, min($count, count($alerts)));
+    }
+
     /**
      * Process a robot inspection image and create alerts if hazards are detected.
      *
@@ -20,17 +62,39 @@ class RobotInspectionController extends Controller
     public function inspect(Request $request)
     {
         $request->validate([
-            'image' => ['required', 'image', 'max:10240'], // Max 10MB
+            'image' => ['nullable', 'image', 'max:10240'], // Max 10MB
         ]);
 
+        if ($request->query('test') === 'true') {
+            return response()->json([
+                'hazard' => 'fire',
+                'message' => 'Sample hazard detected for testing purposes.'
+            ]);
+        }
+
         try {
-            // Store the uploaded image temporarily
-            $imagePath = $request->file('image')->store('temp/inspections', 'public');
+            // Use sample image if no image is uploaded
+            $imagePath = $request->file('image') ? $request->file('image')->store('temp/inspections', 'public') : 'sample-hazard.jpg';
             $imageUrl = Storage::url($imagePath);
             
+            // If using the sample image, ensure it exists
+            if ($imagePath === 'sample-hazard.jpg' && !Storage::disk('public')->exists($imagePath)) {
+                return back()->with('error', 'Sample image not found.');
+            }
+
             // Get the Vision AI configuration
             $visionApiEndpoint = config('services.vertex_ai.vision_endpoint');
             $apiKey = config('services.vertex_ai.api_key');
+
+            // Check if the endpoint is null
+            if (is_null($visionApiEndpoint)) {
+                // Return an Inertia response with random alerts if the Vision API endpoint is not configured
+                return Inertia::render('RobotCameraView', [
+                    'hazard' => 'sample_hazard',
+                    'message' => 'Sample output due to Vision API endpoint not configured.',
+                    'alerts' => $this->getRandomAlerts(rand(1, 3)), // Return 1-3 random alerts
+                ]);
+            }
 
             // Send image to Vision AI service
             $response = Http::withHeaders([
@@ -50,11 +114,11 @@ class RobotInspectionController extends Controller
             Storage::disk('public')->delete($imagePath);
 
             if (!$response->successful()) {
-                Log::error('Vision AI API error', [
-                    'status' => $response->status(),
-                    'response' => $response->json(),
+                // Return a sample output if there is an issue with Vision AI
+                return response()->json([
+                    'hazard' => 'sample_hazard',
+                    'message' => 'Sample output due to Vision AI issue.'
                 ]);
-                return back()->with('error', 'Failed to analyze image. Please try again.');
             }
 
             $analysis = $response->json();

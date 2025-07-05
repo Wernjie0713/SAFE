@@ -6,6 +6,9 @@ use App\Http\Controllers\Api\DataIngestionController;
 use App\Http\Controllers\Api\RobotInspectionController;
 use App\Http\Controllers\Api\AiAssistantController;
 use App\Http\Controllers\Api\AlertController;
+use App\Http\Controllers\Api\DemoController;
+use App\Http\Controllers\Api\SensorController;
+use App\Http\Controllers\Api\AIAnalysisController;
 
 /*
 |--------------------------------------------------------------------------
@@ -41,6 +44,7 @@ Route::middleware(['auth:sanctum', 'web'])->group(function () {
 
     // Robot Inspection Routes
     Route::get('/robot/status', [RobotInspectionController::class, 'status']);
+    Route::post('/robot/inspect', [RobotInspectionController::class, 'inspect']);
     Route::post('/robot/start-inspection', [RobotInspectionController::class, 'startInspection']);
     Route::post('/robot/stop-inspection', [RobotInspectionController::class, 'stopInspection']);
     
@@ -54,7 +58,26 @@ Route::middleware(['auth:sanctum', 'web'])->group(function () {
     });
 });
 
-// Data Ingestion Routes (separate middleware for M2M communication)
-Route::middleware(['auth:sanctum'])->group(function () {
-    Route::post('/ingest/sensor-data', [DataIngestionController::class, 'store']);
+// Apply web middleware first to ensure session is available
+Route::middleware(['web', 'auth:sanctum'])->group(function () {
+    Route::post('/ingest', [DataIngestionController::class, 'store']);
+    Route::get('/alerts', [AlertController::class, 'index']);
+    Route::post('/alerts/{alert}/acknowledge', [AlertController::class, 'acknowledge']);
+    
+    // Sensor routes
+    Route::get('/sensors', [SensorController::class, 'index']);
+    
+    // AI routes
+    Route::post('/ai/analyze', [AiAssistantController::class, 'analyze']);
+    Route::post('/ai/chat', [AiAssistantController::class, 'chat']);
+    Route::post('/ai/analyze-readings', [AIAnalysisController::class, 'analyzeSensorReadings']);
+    
+    // Robot inspection routes
+    Route::get('/robot/status', [RobotInspectionController::class, 'status']);
+    Route::post('/robot/start-inspection', [RobotInspectionController::class, 'startInspection']);
+    Route::post('/robot/stop-inspection', [RobotInspectionController::class, 'stopInspection']);
+    
+    // Demo scenario routes
+    Route::get('/demo/scenarios', [DemoController::class, 'listScenarios']);
+    Route::post('/demo/trigger-scenario', [DemoController::class, 'triggerScenario']);
 }); 

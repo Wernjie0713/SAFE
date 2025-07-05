@@ -6,27 +6,20 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
-    public function up(): void
+    public function up()
     {
         Schema::create('sensor_readings', function (Blueprint $table) {
             $table->id();
             $table->foreignId('sensor_id')->constrained()->onDelete('cascade');
-            $table->decimal('value', 10, 2);
-            $table->timestamp('reading_time')->useCurrent();
+            $table->float('value');
             $table->timestamps();
-            
-            // Index for faster queries
-            $table->index(['sensor_id', 'reading_time']);
+
+            // Index for quick lookups of recent readings
+            $table->index(['sensor_id', 'created_at']);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
+    public function down()
     {
         Schema::dropIfExists('sensor_readings');
     }

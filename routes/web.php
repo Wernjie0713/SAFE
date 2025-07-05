@@ -12,9 +12,10 @@ use Inertia\Inertia;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
-        'appName' => config('app.name'),
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
+        'laravelVersion' => Application::VERSION,
+        'phpVersion' => PHP_VERSION,
     ]);
 });
 
@@ -55,8 +56,18 @@ Route::middleware('auth')->group(function () {
     Route::resource('sensor-health', SensorController::class);
     
     Route::get('/robot-camera-view', function () {
-        return Inertia::render('RobotCameraView');
+        $alerts = Alert::where('type', 'Visual Hazard')
+            ->orderBy('created_at', 'desc')
+            ->take(10)
+            ->get();
+            
+        return Inertia::render('RobotCameraView', [
+            'alerts' => $alerts
+        ]);
     })->name('robot.camera');
+
+    Route::post('/robot-camera-view/inspect', [App\Http\Controllers\Api\RobotInspectionController::class, 'inspect'])
+        ->name('robot.inspect');
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -68,6 +79,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/ai-assistant', function () {
         return Inertia::render('ChatbotAI');
     })->name('ai-assistant');
+
+    Route::get('/sensors', [SensorController::class, 'index'])->name('sensors');
+    Route::get('/alerts', [AlertController::class, 'index'])->name('alerts');
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports');
+    Route::get('/robot-camera', fn() => Inertia::render('RobotCameraView'))->name('robot-camera');
+    Route::get('/chatbot', fn() => Inertia::render('ChatbotAI'))->name('chatbot');
+    Route::get('/demo-controls', fn() => Inertia::render('DemoControlPanel'))->name('demo-controls');
 });
 
 require __DIR__.'/auth.php';

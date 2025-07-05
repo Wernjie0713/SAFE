@@ -13,16 +13,14 @@ class SensorReading extends Model
     protected $fillable = [
         'sensor_id',
         'value',
-        'reading_time',
     ];
 
     protected $casts = [
         'value' => 'float',
-        'reading_time' => 'datetime',
     ];
 
     /**
-     * Get the sensor that owns the reading.
+     * Get the sensor that owns this reading.
      */
     public function sensor(): BelongsTo
     {

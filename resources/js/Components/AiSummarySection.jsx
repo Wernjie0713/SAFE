@@ -1,75 +1,44 @@
 import React from 'react';
+import {
+    LineChart,
+    Line,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer
+} from 'recharts';
 
 export default function AiSummarySection({ summary, suggestions, isLoading, error }) {
-    // Helper function to extract key data points from summary text
-    const extractKeyData = (summaryText) => {
-        if (!summaryText) return {
-            severity: 'N/A',
-            detectedValue: 'N/A',
-            threshold: 'N/A',
-            location: 'N/A'
-        };
-
-        // Default values
-        let data = {
-            severity: 'N/A',
-            detectedValue: 'N/A',
-            threshold: 'N/A',
-            location: 'N/A'
-        };
-
-        // Extract severity (assuming it's mentioned in the text)
-        const severityMatch = summaryText.match(/(?:critical|high|medium|low)/i);
-        if (severityMatch) {
-            data.severity = severityMatch[0].charAt(0).toUpperCase() + severityMatch[0].slice(1);
-        }
-
-        // Extract numeric values (assuming they're in the text)
-        const valueMatch = summaryText.match(/(\d+(?:\.\d+)?)\s*(?:ppm|°C|%|mg\/m³)/i);
-        if (valueMatch) {
-            data.detectedValue = valueMatch[0];
-        }
-
-        // Extract location (assuming it's mentioned with "in" or "at")
-        const locationMatch = summaryText.match(/(?:in|at)\s+(Sector\s+[A-Z]|Area\s+\d+|Zone\s+\d+)/i);
-        if (locationMatch) {
-            data.location = locationMatch[1];
-        }
-
-        return data;
-    };
-
-    // Helper function to parse suggestions JSON string
-    const parseSuggestions = (suggestionsText) => {
-        if (!suggestionsText) return [];
-        
-        // If suggestionsText is already an array, return it
-        if (Array.isArray(suggestionsText)) {
-            return suggestionsText;
-        }
-
-        // Convert to string if it's not already
-        const textToProcess = String(suggestionsText);
-        
+    // Parse the JSON summary
+    const parseSummary = (summaryText) => {
+        if (!summaryText) return null;
         try {
-            // Try to parse as JSON first
-            const parsed = JSON.parse(textToProcess);
-            if (Array.isArray(parsed)) {
-                return parsed;
-            }
-            // If it's not an array, return as single item array
-            return [textToProcess];
+            return typeof summaryText === 'string' ? JSON.parse(summaryText) : summaryText;
         } catch (e) {
-            // If JSON parsing fails, fall back to text splitting
-            return textToProcess
-                .split(/(?:\d+\.|•|\n-|\n\*)/g)
-                .map(s => s.trim())
-                .filter(s => s.length > 0);
+            console.error('Failed to parse AI summary:', e);
+            return null;
         }
     };
 
-    const keyData = extractKeyData(summary);
-    const suggestionsList = suggestions ? parseSuggestions(suggestions) : [];
+    const parsedData = parseSummary(summary);
+
+    // Helper function to get risk level color
+    const getRiskLevelColor = (level) => {
+        const colors = {
+            'Critical': 'bg-red-100 text-red-800 border-red-200',
+            'High': 'bg-orange-100 text-orange-800 border-orange-200',
+            'Medium': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+            'Low': 'bg-blue-100 text-blue-800 border-blue-200'
+        };
+        return colors[level] || 'bg-gray-100 text-gray-800 border-gray-200';
+    };
+
+    // Prepare chart data
+    const chartData = parsedData?.readings?.map((value, index) => ({
+        index: index + 1,
+        value
+    })) || [];
 
     if (isLoading) {
         return (
@@ -98,7 +67,7 @@ export default function AiSummarySection({ summary, suggestions, isLoading, erro
         );
     }
 
-    if (!summary && !suggestions) {
+    if (!parsedData) {
         return (
             <div className="rounded-lg bg-gray-50 p-4">
                 <div className="flex">
@@ -118,80 +87,79 @@ export default function AiSummarySection({ summary, suggestions, isLoading, erro
 
     return (
         <div className="space-y-6">
-            {/* Incident Summary Card */}
+            {/* Risk Level Badge */}
+            <div className="flex items-center space-x-2">
+                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getRiskLevelColor(parsedData.analysis.risk_level)}`}>
+                    {parsedData.analysis.risk_level}
+                </span>
+                <span className="text-sm text-gray-500">Risk Level</span>
+            </div>
+
+            {/* Sensor Readings Chart */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+                <div className="px-4 py-3 bg-gradient-to-r from-blue-50 to-transparent border-b border-gray-100">
+                    <div className="flex items-center">
+                        <svg className="h-5 w-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                        </svg>
+                        <h3 className="ml-2 text-sm font-semibold text-gray-900">Sensor Reading Trend</h3>
+                    </div>
+                </div>
+                <div className="p-4">
+                    <div className="h-64">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={chartData}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="index" />
+                                <YAxis />
+                                <Tooltip />
+                                <Line
+                                    type="monotone"
+                                    dataKey="value"
+                                    stroke="#3B82F6"
+                                    strokeWidth={2}
+                                    dot={{ fill: '#3B82F6', r: 4 }}
+                                    activeDot={{ r: 6 }}
+                                />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+            </div>
+
+            {/* Explanation Card */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
                 <div className="px-4 py-3 bg-gradient-to-r from-blue-50 to-transparent border-b border-gray-100">
                     <div className="flex items-center">
                         <svg className="h-5 w-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <h3 className="ml-2 text-sm font-semibold text-gray-900">Incident Summary</h3>
+                        <h3 className="ml-2 text-sm font-semibold text-gray-900">Incident Analysis</h3>
                     </div>
                 </div>
                 <div className="p-4">
-                    {/* Key Data Points Grid */}
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div className="bg-gray-50 rounded-lg p-3">
-                            <div className="text-xs font-medium text-gray-500 uppercase">Severity</div>
-                            <div className="mt-1 font-medium text-gray-900">{keyData.severity}</div>
-                        </div>
-                        <div className="bg-gray-50 rounded-lg p-3">
-                            <div className="text-xs font-medium text-gray-500 uppercase">Location</div>
-                            <div className="mt-1 font-medium text-gray-900">{keyData.location}</div>
-                        </div>
-                        <div className="bg-gray-50 rounded-lg p-3">
-                            <div className="text-xs font-medium text-gray-500 uppercase">Detected Value</div>
-                            <div className="mt-1 font-medium text-gray-900">{keyData.detectedValue}</div>
-                        </div>
-                        <div className="bg-gray-50 rounded-lg p-3">
-                            <div className="text-xs font-medium text-gray-500 uppercase">Threshold</div>
-                            <div className="mt-1 font-medium text-gray-900">{keyData.threshold}</div>
-                        </div>
-                    </div>
-                    {/* Full Summary Text */}
-                    <div className="text-sm text-gray-600 leading-relaxed">{summary}</div>
+                    <p className="text-sm text-gray-600 leading-relaxed">{parsedData.analysis.explanation}</p>
                 </div>
             </div>
 
-            {/* Suggested Actions Card */}
-            {suggestionsList.length > 0 && (
-                <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="px-4 py-3 bg-gradient-to-r from-blue-50 to-transparent border-b border-gray-100">
-                        <div className="flex items-center">
-                            <svg className="h-5 w-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                            </svg>
-                            <h3 className="ml-2 text-sm font-semibold text-gray-900">Suggested Actions</h3>
-                        </div>
-                    </div>
-                    <div className="p-4">
-                        <ol className="space-y-4">
-                            {suggestionsList.map((suggestion, index) => (
-                                <li key={index} className="flex items-start group">
-                                    <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-blue-50 group-hover:bg-blue-100 transition-colors duration-150">
-                                        <span className="text-sm font-medium text-blue-600">{index + 1}</span>
-                                    </div>
-                                    <div className="ml-3 flex-1">
-                                        <div className="flex items-center">
-                                            <svg className="h-5 w-5 text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-150" 
-                                                 fill="none" 
-                                                 stroke="currentColor" 
-                                                 viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" 
-                                                      strokeLinejoin="round" 
-                                                      strokeWidth={2} 
-                                                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                            <span className="ml-2 text-sm text-gray-700">{suggestion}</span>
-                                        </div>
-                                        <div className="mt-1 h-px bg-gray-100 group-hover:bg-blue-100 transition-colors duration-150"></div>
-                                    </div>
-                                </li>
-                            ))}
-                        </ol>
+            {/* Recommended Actions Card */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+                <div className="px-4 py-3 bg-gradient-to-r from-blue-50 to-transparent border-b border-gray-100">
+                    <div className="flex items-center">
+                        <svg className="h-5 w-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                        </svg>
+                        <h3 className="ml-2 text-sm font-semibold text-gray-900">Recommended Actions</h3>
                     </div>
                 </div>
-            )}
+                <div className="p-4">
+                    <div className="prose prose-sm max-w-none">
+                        <div className="text-sm text-gray-600 leading-relaxed">
+                            {parsedData.analysis.recommended_action}
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 } 

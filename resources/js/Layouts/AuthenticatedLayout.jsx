@@ -3,6 +3,7 @@ import Dropdown from '@/Components/Dropdown';
 import { Link, usePage } from '@inertiajs/react';
 import { useState, useEffect, useCallback } from 'react';
 import Toast from '@/Components/Toast';
+import CriticalAlertModal from '@/Components/CriticalAlertModal';
 
 export default function AuthenticatedLayout({ header, children }) {
     const { auth, flash } = usePage().props;
@@ -11,6 +12,8 @@ export default function AuthenticatedLayout({ header, children }) {
     const [toastMessage, setToastMessage] = useState(null);
     const [toastType, setToastType] = useState('success');
     const [toastKey, setToastKey] = useState(0);
+    const [criticalAlert, setCriticalAlert] = useState(null);
+    const [showCriticalModal, setShowCriticalModal] = useState(false);
 
     // Handle flash messages with key update
     useEffect(() => {
@@ -20,6 +23,24 @@ export default function AuthenticatedLayout({ header, children }) {
             setToastKey(prev => prev + 1);
         };
 
+        // Handle alert flash messages
+        if (flash?.alert) {
+            const alert = flash.alert;
+            // Convert severity to lowercase for case-insensitive comparison
+            const severity = alert?.severity?.toLowerCase() || '';
+            
+            if (severity === 'critical') {
+                // For critical alerts, show modal
+                setCriticalAlert(alert);
+                setShowCriticalModal(true);
+            } else if (alert?.description) {
+                // For non-critical alerts, show toast
+                showToast(alert.description, severity || 'info');
+            }
+            return;
+        }
+
+        // Handle regular flash messages
         if (flash?.success) {
             showToast(flash.success, 'success');
         } else if (flash?.error) {
@@ -34,6 +55,15 @@ export default function AuthenticatedLayout({ header, children }) {
     // Clear toast after display with useCallback
     const handleToastClose = useCallback(() => {
         setToastMessage(null);
+    }, []);
+
+    // Handle critical alert acknowledgment with proper cleanup
+    const handleCriticalAlertClose = useCallback(() => {
+        setShowCriticalModal(false);
+        // Use a timeout to allow the modal close animation to complete
+        setTimeout(() => {
+            setCriticalAlert(null);
+        }, 300);
     }, []);
 
     // Navigation items with icons
@@ -109,6 +139,13 @@ export default function AuthenticatedLayout({ header, children }) {
 
     return (
         <div className="flex h-screen bg-gray-100">
+            {/* Critical Alert Modal */}
+            <CriticalAlertModal
+                show={showCriticalModal}
+                onClose={handleCriticalAlertClose}
+                alert={criticalAlert}
+            />
+
             {/* Toast Notification with improved positioning */}
             {toastMessage && (
                 <Toast 

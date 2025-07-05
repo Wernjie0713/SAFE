@@ -33,6 +33,7 @@ class Alert extends Model
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'sensor_id' => 'integer',
     ];
 
     /**
@@ -47,7 +48,11 @@ class Alert extends Model
      */
     public function sensor(): BelongsTo
     {
-        return $this->belongsTo(Sensor::class);
+        return $this->belongsTo(Sensor::class)->withDefault([
+            'name' => 'Robot Camera',
+            'type' => 'visual_inspection',
+            'location' => 'Mobile'
+        ]);
     }
 
     /**
